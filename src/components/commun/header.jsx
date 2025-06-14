@@ -1,8 +1,8 @@
 // src/components/commun/Header.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { logout } from '../../services/serviceAuth';
-import { useRessource } from '../../pages/RessourceContext.jsx'; 
+import { logout } from '../../services/serviceAuth'; // Assurez-vous que serviceAuth.js gère la déconnexion
+import { useRessource } from '../../pages/RessourceContext.jsx'; // Assurez-vous que ce chemin est correct
 
 const Header = () => {
     const navigate = useNavigate();
@@ -31,11 +31,13 @@ const Header = () => {
         };
     }, [navigate]);
 
+    // Fonction de déconnexion utilisant le serviceAuth
     const handleDeconnexion = async () => {
         console.log("handleDeconnexion: Tentative de déconnexion...");
         try {
-            await logout(); 
+            await logout(); // Appel à la fonction logout du service d'authentification
             console.log("handleDeconnexion: Appel à logout terminé.");
+            // Le `useEffect` ci-dessus gérera la redirection si le rôle disparaît du localStorage
         } catch (error) {
             console.error("handleDeconnexion: Erreur lors de la déconnexion:", error);
         }
@@ -45,7 +47,6 @@ const Header = () => {
         return userRole === 'PSYCHIATRE' || userRole === 'PSYCHOLOGUE';
     };
 
-    // Fonction pour vérifier si l'utilisateur a un rôle premium (incluant ADMIN)
     const isPremiumUser = (userRole) => {
         return userRole === 'PREMIUM' || userRole === 'ADMIN'; 
     };
@@ -54,11 +55,12 @@ const Header = () => {
         const newCategory = e.target.value;
         setSelectedCategory(newCategory); 
         
-        // Si l'utilisateur n'est pas déjà sur la page /ressources, le rediriger
         if (location.pathname !== '/ressources') {
             navigate('/ressources');
         }
     };
+
+    const isAuthenticated = !!currentRole; 
 
     return (
         <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -70,55 +72,74 @@ const Header = () => {
 
                 {/* Navigation principale */}
                 <nav className="flex flex-wrap justify-center md:flex-nowrap items-center space-x-4 md:space-x-6 text-gray-700 text-sm font-medium">
-                    <Link to="/" className="hover:text-indigo-600 transition">Accueil</Link>
-                    
-                    {/* Menu déroulant des Ressources - VISIBLE SEULEMENT POUR LES UTILISATEURS DU RÔLE 'UTILISATEUR' */}
-                    {currentRole === 'UTILISATEUR' && ( 
-                         <div className="relative">
-                            <label htmlFor="resource-category-select" className="sr-only">Filtrer les ressources</label>
-                            <select
-                                id="resource-category-select"
-                                className="bg-white text-gray-700 py-1 px-3 rounded-md border border-gray-300 hover:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm"
-                                value={selectedCategory}
-                                onChange={handleCategoryChange}
-                            >
-                                {categoriesOrder.map(cat => (
-                                    <option key={cat.key} value={cat.key}>
-                                        {cat.title}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                    {/* Liens toujours visibles si non Admin */}
+                    {currentRole !== 'ADMIN' && (
+                        <Link to="/" className="hover:text-indigo-600 transition">Accueil</Link>
                     )}
-                   
-                    <Link to="/forum" className="hover:text-indigo-600 transition">Forum</Link>
+                    
+                    {/* Liens spécifiques pour l'utilisateur (non-pro, non-admin) */}
+                    {currentRole === 'UTILISATEUR' && (
+                        <>
+                            {/* Menu déroulant des Ressources */}
+                            <div className="relative">
+                                <label htmlFor="resource-category-select" className="sr-only">Filtrer les ressources</label>
+                                <select
+                                    id="resource-category-select"
+                                    className="bg-white text-gray-700 py-1 px-3 rounded-md border border-gray-300 hover:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm"
+                                    value={selectedCategory}
+                                    onChange={handleCategoryChange}
+                                >
+                                    {categoriesOrder.map(cat => (
+                                        <option key={cat.key} value={cat.key}>
+                                            {cat.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <Link to="/professionnels" className="hover:text-indigo-600 transition">Professionnels</Link>
+                        </>
+                    )}
 
-                    {/* Liens conditionnels en fonction du rôle */}
-                    {currentRole ? (
+                    {/* Lien Forum (visible pour Utilisateur et Professionnel) */}
+                    {(currentRole === 'UTILISATEUR' || isProfessional(currentRole)) && (
+                        <Link to="/forum" className="hover:text-indigo-600 transition">Forum</Link>
+                    )}
+
+                    {/* Liens conditionnels basés sur le rôle */}
+                    {isAuthenticated ? ( 
                         <>
                             {currentRole === 'UTILISATEUR' && (
-                                <Link to="/tableauUtilisateur" className="hover:text-indigo-600 transition">Espace Utilisateur</Link>
+                                <>
+                                    <Link to="/messagerie" className="hover:text-indigo-600 transition">Messagerie</Link>
+                                    <Link to="/tableauUtilisateur" className="hover:text-indigo-600 transition">Espace Utilisateur</Link>
+                                    {/* Lien "Devenir Premium" - visible si utilisateur et non premium */}
+                                    {!isPremiumUser(currentRole) && (
+                                        <Link 
+                                            to="/devenir-premium" 
+                                            className="bg-yellow-500 text-white px-4 py-2 rounded-full hover:bg-yellow-600 transition ml-2"
+                                        >
+                                            Devenir Premium ✨
+                                        </Link>
+                                    )}
+                                </>
                             )}
+                            
                             {isProfessional(currentRole) && (
-                                <Link to="/tableauProfessionnel" className="hover:text-indigo-600 transition">Espace Pro</Link>
+                                <>
+                                    <Link to="/messagerie" className="hover:text-indigo-600 transition">Messagerie</Link> 
+                                    <Link to="/tableauProfessionnel" className="hover:text-indigo-600 transition">Espace Pro</Link>
+                                </>
                             )}
+
                             {currentRole === 'ADMIN' && (
                                 <Link to="/admin/dashboard" className="hover:text-indigo-600 transition">Admin</Link>
                             )}
 
-                            {/* Lien "Devenir Premium" - visible si connecté et non premium (ni pro, ni admin) */}
-                            {currentRole === 'UTILISATEUR' && !isPremiumUser(currentRole) && (
-                                <Link 
-                                    to="/devenir-premium" 
-                                    className="bg-yellow-500 text-white px-4 py-2 rounded-full hover:bg-yellow-600 transition ml-2"
-                                >
-                                    Devenir Premium ✨
-                                </Link>
-                            )}
-
+                            {/* Bouton de Déconnexion stylisé */}
                             <button
                                 onClick={handleDeconnexion}
-                                className="ml-4 text-red-600 hover:underline focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                                // Nouvelle classe pour un style similaire au bouton d'inscription, mais en rouge
+                                className="bg-red-600 text-white px-4 py-2 rounded-full hover:bg-red-700 transition ml-2"
                             >
                                 Déconnexion
                             </button>
