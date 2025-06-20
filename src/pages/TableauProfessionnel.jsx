@@ -1,413 +1,218 @@
-// src/pages/TableauProfessionnel.jsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import de useNavigate pour la redirection
 import Layout from '../components/commun/Layout';
+import Disponibilites from '../components/professionel/Disponibilites';
+import Reservations from '../components/professionel/Reservations';
+import Consultations from '../components/professionel/Consultations';
+import {
+  CalendarDays,
+  UserCheck,
+  Info,
+  ChevronsLeft,
+  ChevronsRight,
+  Moon,
+  Sun,
+  XCircle
+} from 'lucide-react';
+
+// IMPORT DE LA FONCTION POUR LIRE L'UTILISATEUR DANS LOCALSTORAGE
 import { getCurrentUserInfo } from '../services/serviceAuth';
-import { useNavigate } from 'react-router-dom';
-import { 
-    getDisponibilites, 
-    ajouterDisponibilite, 
-    modifierDisponibilite, 
-    supprimerDisponibilite 
-} from '../services/servicePsy'; // Importer les fonctions du service PROFESSIONNEL
 
 const TableauProfessionnel = () => {
-    const [currentUser, setCurrentUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [globalError, setGlobalError] = useState(null);
-    const [disponibilites, setDisponibilites] = useState([]);
-    const [showDispoModal, setShowDispoModal] = useState(false); 
-    const [currentDispo, setCurrentDispo] = useState(null); 
-    const [activeTab, setActiveTab] = useState('informations'); // Nouvel état pour les onglets: 'informations', 'disponibilites', 'reservations', 'consultations', 'profil'
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    // États pour le formulaire de disponibilité
-    const [dispoDate, setDispoDate] = useState('');
-    const [dispoHeureDebut, setDispoHeureDebut] = useState('');
-    const [dispoHeureFin, setDispoHeureFin] = useState('');
-
-    // Message de succès/erreur général pour les opérations CRUD sur disponibilités
-    const [message, setMessage] = useState('');
-    useEffect(() => {
-        if (message) {
-            const timer = setTimeout(() => {
-                setMessage('');
-            }, 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [message]);
-
-    // Charger l'utilisateur connecté et ses disponibilités au démarrage
-    useEffect(() => {
-        const fetchProfessionalData = async () => {
-            try {
-                const user = getCurrentUserInfo();
-                if (!user || !(user.role === 'PSYCHOLOGUE' || user.role === 'PSYCHIATRE')) {
-                    setGlobalError("Accès refusé : Vous n'êtes pas un professionnel de santé mentale ou non connecté.");
-                    navigate('/connexion'); // Rediriger si non autorisé
-                } else {
-                    setCurrentUser(user);
-                    await fetchDisponibilites(); // Charger les disponibilités du professionnel
-                    setGlobalError(null);
-                }
-            } catch (err) {
-                console.error("Erreur lors du chargement des données du professionnel:", err);
-                setGlobalError("Impossible de charger le tableau de bord. " + (err.response?.data?.message || err.message));
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProfessionalData();
-    }, [navigate]); // navigate est une dépendance stable
-
-    // Fonction pour récupérer les disponibilités (peut être appelée après ajout/modif/suppression)
-    const fetchDisponibilites = async () => {
-        try {
-            // Pas de setLoading(true) ici car déjà géré par fetchProfessionalData au global
-            const data = await getDisponibilites(); 
-            const sortedData = data.sort((a, b) => {
-                const dateA = new Date(`${a.date}T${a.heureDebut}`);
-                const dateB = new Date(`${b.date}T${b.heureDebut}`);
-                return dateA - dateB;
-            });
-            setDisponibilites(sortedData);
-        } catch (err) {
-            console.error("Erreur lors du chargement des disponibilités:", err);
-            // Afficher l'erreur spécifique pour cette section si nécessaire, ou globalement
-            setGlobalError("Impossible de charger les disponibilités. " + (err.response?.data || err.message));
-        }
-    };
-
-    const handleAddOrUpdateDispo = async (e) => {
-        e.preventDefault();
-        setGlobalError(null); // Réinitialiser les erreurs générales
-
-        if (!dispoDate || !dispoHeureDebut || !dispoHeureFin) {
-            setGlobalError("Veuillez remplir tous les champs de la disponibilité.");
-            return;
-        }
-
-        const newDispoData = {
-            date: dispoDate,
-            heureDebut: dispoHeureDebut,
-            heureFin: dispoHeureFin,
-        };
-
-        try {
-            if (currentDispo) {
-                await modifierDisponibilite(currentDispo.id, newDispoData);
-                setMessage("Disponibilité modifiée avec succès !");
-            } else {
-                await ajouterDisponibilite(newDispoData);
-                setMessage("Disponibilité ajoutée avec succès !");
-            }
-            fetchDisponibilites(); 
-            setShowDispoModal(false); 
-            resetDispoForm(); 
-        } catch (err) {
-            console.error("Erreur lors de l'opération sur la disponibilité:", err);
-            setGlobalError("Opération échouée: " + (err.response?.data?.message || err.message));
-        }
-    };
-
-    const handleDeleteDispo = async (id) => {
-        if (window.confirm("Êtes-vous sûr de vouloir supprimer cette disponibilité ?")) {
-            try {
-                await supprimerDisponibilite(id);
-                setMessage("Disponibilité supprimée avec succès !");
-                fetchDisponibilites(); 
-            } catch (err) {
-                console.error("Erreur lors de la suppression de la disponibilité:", err);
-                setGlobalError("Suppression échouée: " + (err.response?.data?.message || err.message));
-            }
-        }
-    };
-
-    const openAddDispoModal = () => {
-        setCurrentDispo(null); 
-        resetDispoForm();
-        setShowDispoModal(true);
-    };
-
-    const openEditDispoModal = (dispo) => {
-        setCurrentDispo(dispo);
-        setDispoDate(dispo.date);
-        setDispoHeureDebut(dispo.heureDebut);
-        setDispoHeureFin(dispo.heureFin);
-        setShowDispoModal(true);
-    };
-
-    const resetDispoForm = () => {
-        setDispoDate('');
-        setDispoHeureDebut('');
-        setDispoHeureFin('');
-        setGlobalError(null); 
-    };
-
-    if (loading) {
-        return <Layout><div className="text-center py-8 text-gray-600">Chargement du tableau de bord professionnel...</div></Layout>;
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [globalError, setGlobalError] = useState(null);
+  const [activeTab, setActiveTab] = useState('informations');
+  const [sidebarReduced, setSidebarReduced] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('darkMode') === 'true';
     }
+    return false;
+  });
 
-    if (globalError && !currentUser) { // Affiche l'erreur principale si non connecté ou rôle incorrect
-        return (
-            <Layout>
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mx-auto my-8 max-w-xl">
-                    {globalError}
-                </div>
-            </Layout>
-        );
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('darkMode', 'true');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('darkMode', 'false');
     }
-    
-    // Convertir les rôles PSYCHOLOGUE/PSYCHIATRE en français pour l'affichage
-    const roleFr = currentUser?.role === 'PSYCHOLOGUE' ? 'Psychologue' : 
-                   currentUser?.role === 'PSYCHIATRE' ? 'Psychiatre' : currentUser?.role;
+  }, [darkMode]);
 
-    // Fonction de rendu des sections basée sur l'onglet actif
-    const renderSection = () => {
-        switch (activeTab) {
-            case 'informations':
-                return (
-                    <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                        <h2 className="text-2xl font-semibold text-gray-700 mb-4">Mes Informations Personnelles</h2>
-                        <p><strong>Nom:</strong> {currentUser?.nom} {currentUser?.prenom}</p>
-                        <p><strong>Email:</strong> {currentUser?.email}</p>
-                        <p><strong>Téléphone:</strong> {currentUser?.telephone}</p>
-                        <p><strong>Spécialité:</strong> {currentUser?.specialite}</p> 
-                        {/* Ajoutez d'autres informations du professionnel ici */}
-                    </div>
-                );
-            case 'disponibilites':
-                return (
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-                            Gestion de mes Disponibilités
-                            <button 
-                                onClick={openAddDispoModal} 
-                                className="ml-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-200"
-                            >
-                                + Ajouter une disponibilité
-                            </button>
-                        </h2>
-                        
-                        {disponibilites.length === 0 ? (
-                            <p className="text-gray-600">Aucune disponibilité enregistrée pour le moment.</p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Heure Début</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Heure Fin</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {disponibilites.map(dispo => (
-                                            <tr key={dispo.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dispo.date}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dispo.heureDebut}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dispo.heureFin}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                        dispo.reservee ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                                                    }`}>
-                                                        {dispo.reservee ? 'Réservée' : 'Disponible'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button 
-                                                        onClick={() => openEditDispoModal(dispo)}
-                                                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                                                    >
-                                                        Modifier
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleDeleteDispo(dispo.id)}
-                                                        className="text-red-600 hover:text-red-900"
-                                                    >
-                                                        Supprimer
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                );
-            case 'reservations':
-                return (
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h2 className="text-2xl font-semibold text-gray-700 mb-4">Mes Réservations Reçues</h2>
-                        <p className="text-gray-600">
-                            Contenu pour la gestion des réservations reçues par le professionnel (à implémenter).
-                        </p>
-                    </div>
-                );
-            case 'consultations':
-                return (
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h2 className="text-2xl font-semibold text-gray-700 mb-4">Mes Consultations Passées</h2>
-                        <p className="text-gray-600">
-                            Contenu pour l'historique des consultations du professionnel (à implémenter).
-                        </p>
-                    </div>
-                );
-            case 'profil':
-                return (
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h2 className="text-2xl font-semibold text-gray-700 mb-4">Modifier mon Profil</h2>
-                        <p className="text-gray-600">
-                            Contenu pour la modification du profil du professionnel (à implémenter, similaire à FormulaireProfil pour l'utilisateur).
-                        </p>
-                    </div>
-                );
-            default:
-                return null;
+  useEffect(() => {
+    const fetchUserData = () => {
+      try {
+        const user = getCurrentUserInfo();
+        if (!user || !(user.role === 'PSYCHOLOGUE' || user.role === 'PSYCHIATRE')) {
+          setGlobalError("Accès refusé : Vous n'êtes pas un professionnel de santé mentale ou non connecté.");
+          navigate('/connexion'); // redirection vers page de connexion
+        } else {
+          setCurrentUser(user);  // on stocke bien l'utilisateur valide
+          setGlobalError(null);
         }
+      } catch (error) {
+        setCurrentUser(null);
+        setGlobalError("Erreur lors du chargement de l'utilisateur.");
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchUserData();
+  }, [navigate]);
 
+  const renderSection = () => {
+    switch (activeTab) {
+      case 'disponibilites':
+        return <Disponibilites />;
+      case 'reservations':
+        return <Reservations proId={currentUser?.id} />;
+      case 'consultations':
+        return <Consultations />;
+      default:
+        return null;
+    }
+  };
+
+  if (loading)
     return (
-        <Layout>
-            <div className="py-8 px-4 max-w-7xl mx-auto font-sans">
-                <h1 className="text-3xl font-bold text-gray-800 mb-6">
-                    Tableau de Bord Professionnel ({roleFr})
-                </h1>
-
-                {globalError && ( // Affiche les erreurs globales en dehors du modal
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-                        {globalError}
-                    </div>
-                )}
-                {message && ( // Affiche les messages de succès/erreur spécifiques aux opérations
-                    <div className={`mb-4 px-4 py-2 rounded-md ${message.includes('succès') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {message}
-                    </div>
-                )}
-
-                {/* Barre d'onglets */}
-                <div className="mb-6 border-b border-gray-200">
-                    <nav className="-mb-px flex space-x-8">
-                        <button
-                            onClick={() => setActiveTab('informations')}
-                            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                                activeTab === 'informations'
-                                    ? 'border-indigo-500 text-indigo-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
-                        >
-                            Mes Informations
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('disponibilites')}
-                            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                                activeTab === 'disponibilites'
-                                    ? 'border-indigo-500 text-indigo-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
-                        >
-                            Mes Disponibilités
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('reservations')}
-                            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                                activeTab === 'reservations'
-                                    ? 'border-indigo-500 text-indigo-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
-                        >
-                            Mes Réservations
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('consultations')}
-                            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                                activeTab === 'consultations'
-                                    ? 'border-indigo-500 text-indigo-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
-                        >
-                            Mes Consultations
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('profil')}
-                            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                                activeTab === 'profil'
-                                    ? 'border-indigo-500 text-indigo-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
-                        >
-                            Modifier mon Profil
-                        </button>
-                    </nav>
-                </div>
-
-                {/* Contenu des onglets */}
-                {renderSection()}
-
-                {/* Modal pour Ajouter/Modifier une Disponibilité (reste en dehors de renderSection car c'est un overlay) */}
-                {showDispoModal && (
-                    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
-                        <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
-                            <h3 className="text-xl font-bold text-gray-800 mb-4">{currentDispo ? "Modifier la disponibilité" : "Ajouter une nouvelle disponibilité"}</h3>
-                            <form onSubmit={handleAddOrUpdateDispo} className="space-y-4">
-                                <div>
-                                    <label htmlFor="dispoDate" className="block text-sm font-medium text-gray-700">Date</label>
-                                    <input
-                                        type="date"
-                                        id="dispoDate"
-                                        value={dispoDate}
-                                        onChange={(e) => setDispoDate(e.target.value)}
-                                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="dispoHeureDebut" className="block text-sm font-medium text-gray-700">Heure de début</label>
-                                    <input
-                                        type="time"
-                                        id="dispoHeureDebut"
-                                        value={dispoHeureDebut}
-                                        onChange={(e) => setDispoHeureDebut(e.target.value)}
-                                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="dispoHeureFin" className="block text-sm font-medium text-gray-700">Heure de fin</label>
-                                    <input
-                                        type="time"
-                                        id="dispoHeureFin"
-                                        value={dispoHeureFin}
-                                        onChange={(e) => setDispoHeureFin(e.target.value)}
-                                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                        required
-                                    />
-                                </div>
-                                {globalError && <p className="text-red-500 text-sm">{globalError}</p>} {/* Affiche l'erreur du modal */}
-                                <div className="flex justify-end space-x-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => { setShowDispoModal(false); resetDispoForm(); }}
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                    >
-                                        Annuler
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    >
-                                        {currentDispo ? "Modifier" : "Ajouter"}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </Layout>
+      <Layout>
+        <div className="text-center p-8 text-blue-600 dark:text-blue-400">
+          Chargement...
+        </div>
+      </Layout>
     );
+
+  if (globalError && !currentUser)
+    return (
+      <Layout>
+        <div className="p-6 text-red-600 dark:text-red-400">{globalError}</div>
+      </Layout>
+    );
+
+  return (
+    <Layout>
+      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+        {/* Sidebar */}
+        <nav
+          className={`flex flex-col justify-between bg-gradient-to-b from-blue-800 to-blue-600 text-white shadow-lg
+            transition-width duration-300 ease-in-out
+            ${sidebarReduced ? 'w-20' : 'w-64'}
+          `}
+        >
+          {/* User info */}
+          <div className="flex flex-col items-center p-3 border-b border-blue-500 space-y-1">
+            {currentUser?.photoUrl ? (
+              <img
+                src={currentUser.photoUrl}
+                alt="pro"
+                className="w-14 h-14 rounded-full"
+              />
+            ) : (
+              <div className="w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center text-white text-lg font-semibold">
+                {currentUser?.prenom?.[0] || 'P'}
+              </div>
+            )}
+
+            {!sidebarReduced && (
+              <>
+                <div className="flex gap-1 font-semibold text-base leading-tight justify-center">
+                  <span>{currentUser?.prenom}</span>
+                  <span>{currentUser?.nom}</span>
+                </div>
+                <span className="text-blue-300 text-xs">Professionnel</span>
+              </>
+            )}
+          </div>
+
+          {/* Nav items */}
+          <div className="flex-grow mt-1 space-y-1 px-2">
+            
+            <NavItem
+              icon={<CalendarDays size={20} />}
+              label="Disponibilités"
+              active={activeTab === 'disponibilites'}
+              onClick={() => setActiveTab('disponibilites')}
+              reduced={sidebarReduced}
+            />
+            <NavItem
+              icon={<UserCheck size={20} />}
+              label="Réservations"
+              active={activeTab === 'reservations'}
+              onClick={() => setActiveTab('reservations')}
+              reduced={sidebarReduced}
+            />
+            <NavItem
+              icon={<CalendarDays size={20} />}
+              label="Consultations"
+              active={activeTab === 'consultations'}
+              onClick={() => setActiveTab('consultations')}
+              reduced={sidebarReduced}
+            />
+          </div>
+
+          {/* Dark mode toggle */}
+          <div className="flex flex-col items-center gap-1 px-2 mt-2">
+            {!sidebarReduced ? (
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="flex items-center gap-2 text-blue-200 hover:text-white transition px-4 py-2 rounded w-full justify-center bg-blue-700 dark:bg-blue-900"
+                aria-label="Toggle mode sombre"
+              >
+                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+                <span>{darkMode ? 'Clair' : 'Sombre'}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="text-blue-200 hover:text-white transition p-2 rounded"
+                aria-label="Toggle mode sombre"
+              >
+                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+            )}
+          </div>
+
+          {/* Sidebar toggle */}
+          <div className="p-1 border-t border-blue-500 flex justify-center mt-2 mb-4">
+            <button
+              onClick={() => setSidebarReduced(!sidebarReduced)}
+              className="text-blue-200 hover:text-white transition-transform duration-200 ease-in-out"
+              aria-label={sidebarReduced ? 'Ouvrir sidebar' : 'Réduire sidebar'}
+              style={{ transformOrigin: 'center' }}
+            >
+              {sidebarReduced ? <ChevronsRight size={24} /> : <ChevronsLeft size={24} />}
+            </button>
+          </div>
+        </nav>
+
+        {/* Contenu principal */}
+        <main className="flex-grow p-6 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+          {globalError && (
+            <div className="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-400 px-4 py-2 rounded flex items-center gap-2 mb-4">
+              <XCircle size={20} />
+              <span>{globalError}</span>
+            </div>
+          )}
+          {renderSection()}
+        </main>
+      </div>
+    </Layout>
+  );
 };
+
+const NavItem = ({ icon, label, active, onClick, reduced }) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 
+      ${active ? 'bg-blue-900 dark:bg-blue-700' : 'hover:bg-blue-700 dark:hover:bg-blue-800'} ${reduced ? 'justify-center' : ''}`}
+  >
+    {icon}
+    {!reduced && <span>{label}</span>}
+  </button>
+);
 
 export default TableauProfessionnel;
