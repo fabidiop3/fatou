@@ -1,4 +1,3 @@
-// src/services/serviceProfessionnel.js
 import api from './api'; 
 
 // Disponibilités
@@ -114,6 +113,25 @@ export const getProfessionnelById = async (id) => {
     return response.data;
   } catch (error) {
     console.error(`ServiceProfessionnel: Erreur lors de la récupération du professionnel ${id}:`, error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Récupère les disponibilités d'un professionnel par son ID.
+ * Correspond à GET /api/disponibilites/{proId}
+ * @param {number} proId - L'ID du professionnel.
+ * @returns {Promise<Array<object>>} Liste des disponibilités.
+ */
+export const getDisponibilitesByProId = async (proId) => {
+  if (!proId) {
+    throw new Error("L'ID professionnel est requis pour récupérer les disponibilités.");
+  }
+  try {
+    const response = await api.get(`/disponibilites/${proId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Erreur lors de la récupération des disponibilités pour le pro ${proId}:`, error.response?.data || error.message);
     throw error;
   }
 };

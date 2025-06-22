@@ -27,13 +27,16 @@ const Header = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [navigate]);
 
-  const handleDeconnexion = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Erreur de déconnexion :", error);
-    }
-  };
+const handleDeconnexion = async () => {
+  try {
+    await logout();
+    localStorage.removeItem('role');  
+    setCurrentRole(null);              
+    navigate('/');                    
+  } catch (error) {
+    console.error("Erreur de déconnexion :", error);
+  }
+};
 
   const isProfessional = (role) => ['PSYCHOLOGUE', 'PSYCHIATRE'].includes(role);
   const isPremiumUser = (role) => ['PREMIUM', 'ADMIN'].includes(role);

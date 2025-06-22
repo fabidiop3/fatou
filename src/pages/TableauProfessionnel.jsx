@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // Import de useNavigate pour la redirection
 import Layout from '../components/commun/Layout';
-import Disponibilites from '../components/professionel/Disponibilites';
 import Reservations from '../components/professionel/Reservations';
 import Consultations from '../components/professionel/Consultations';
 import {
@@ -17,6 +16,7 @@ import {
 
 // IMPORT DE LA FONCTION POUR LIRE L'UTILISATEUR DANS LOCALSTORAGE
 import { getCurrentUserInfo } from '../services/serviceAuth';
+import Disponibilite from '../components/professionel/Disponibilite';
 
 const TableauProfessionnel = () => {
   const navigate = useNavigate();
@@ -66,14 +66,17 @@ const TableauProfessionnel = () => {
 
   const renderSection = () => {
     switch (activeTab) {
+      
+      
       case 'disponibilites':
-        return <Disponibilites />;
+        // Passer proId si besoin (à adapter selon composant Disponibilites)
+        return <Disponibilite proId={currentUser?.id} />;
       case 'reservations':
         return <Reservations proId={currentUser?.id} />;
       case 'consultations':
         return <Consultations />;
       default:
-        return null;
+        return <p>Onglet non reconnu</p>;
     }
   };
 
@@ -130,7 +133,7 @@ const TableauProfessionnel = () => {
 
           {/* Nav items */}
           <div className="flex-grow mt-1 space-y-1 px-2">
-            
+          
             <NavItem
               icon={<CalendarDays size={20} />}
               label="Disponibilités"

@@ -24,13 +24,11 @@
         { key: 'citation', title: 'Citations Inspirantes' },
         { key: 'article', title: 'Articles Éducatifs' },
         { key: 'guide_pratique', title: 'Guides Pratiques' },
-        { key: 'journaling_prompt', title: 'Prompts de Journaling' },
-        { key: 'exercice_texte', title: 'Exercices de Relaxation (texte)' },
         { key: 'video', title: 'Vidéos de Relaxation et Exercices' },
         { key: 'podcast', title: 'Podcasts Bien-être' },
         { key: 'outil', title: 'Outils Interactifs' },
         { key: 'challenge', title: 'Défis Bien-être' },
-        { key: 'Autres', title: 'Autres' } 
+      
       ]), []);
 
       // Valeur fournie par le contexte

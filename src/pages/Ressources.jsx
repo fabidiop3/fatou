@@ -53,15 +53,15 @@ const Ressources = () => {
     );
   }, [fonctionnalites, selectedCategory, categoriesOrder]);
 
-  // 🔒 Redirection automatique si catégorie 100% premium
+  // ✅ Redirection uniquement si on est dans "Toutes les catégories"
   useEffect(() => {
-    if (!loading && !isUserPremium) {
+    if (!loading && !isUserPremium && selectedCategory === 'all') {
       const hasOnlyPremium = filteredFonctionnalites.length > 0 && filteredFonctionnalites.every(f => f.premium);
       if (hasOnlyPremium) {
         navigate('/devenir-premium');
       }
     }
-  }, [loading, isUserPremium, filteredFonctionnalites, navigate]);
+  }, [loading, isUserPremium, selectedCategory, filteredFonctionnalites, navigate]);
 
   const gratuits = filteredFonctionnalites.filter(f => !f.premium);
   const premiums = filteredFonctionnalites.filter(f => f.premium);
