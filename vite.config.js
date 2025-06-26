@@ -7,13 +7,13 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://192.168.1.121:9191',
+        target: 'http://192.168.1.151:9191',
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: "localhost" // ✅ indispensable pour que le cookie soit stocké
       },
       '/professionnel': {
-        target: 'http://192.168.1.121:9191',
+        target: 'http://192.168.1.151:9191',
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: "localhost" // ✅ aussi ici

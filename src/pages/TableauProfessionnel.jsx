@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'; // Import de useNavigate pour la
 import Layout from '../components/commun/Layout';
 import Reservations from '../components/professionel/Reservations';
 import Consultations from '../components/professionel/Consultations';
+import Disponibilite from '../components/professionel/Disponibilite';
+
 import {
   CalendarDays,
   UserCheck,
@@ -11,12 +13,12 @@ import {
   ChevronsRight,
   Moon,
   Sun,
-  XCircle
+  XCircle,
+  Smile
 } from 'lucide-react';
 
 // IMPORT DE LA FONCTION POUR LIRE L'UTILISATEUR DANS LOCALSTORAGE
 import { getCurrentUserInfo } from '../services/serviceAuth';
-import Disponibilite from '../components/professionel/Disponibilite';
 
 const TableauProfessionnel = () => {
   const navigate = useNavigate();
@@ -51,7 +53,7 @@ const TableauProfessionnel = () => {
           setGlobalError("Accès refusé : Vous n'êtes pas un professionnel de santé mentale ou non connecté.");
           navigate('/connexion'); // redirection vers page de connexion
         } else {
-          setCurrentUser(user);  // on stocke bien l'utilisateur valide
+          setCurrentUser(user);
           setGlobalError(null);
         }
       } catch (error) {
@@ -66,10 +68,58 @@ const TableauProfessionnel = () => {
 
   const renderSection = () => {
     switch (activeTab) {
-      
-      
+      case 'informations':
+        return (
+          <div className="space-y-6">
+            {/* Carte de bienvenue */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md flex items-center gap-4">
+              <Smile className="w-10 h-10 text-green-500" />
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+                  Bonjour, <span className="text-indigo-700">{currentUser?.prenom} {currentUser?.nom}</span>
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300">Bienvenue dans votre espace professionnel PsyConnect.</p>
+              </div>
+            </div>
+
+            {/* Carte d'identité */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md flex items-center gap-4">
+              <UserCheck className="w-8 h-8 text-indigo-600" />
+              <div>
+                <p className="text-gray-700 dark:text-gray-200">
+                  <span className="font-semibold">Email :</span> {currentUser?.email}
+                </p>
+                <p className="text-gray-700 dark:text-gray-200">
+                  <span className="font-semibold">Rôle :</span>{' '}
+                  <span className="text-indigo-700 font-semibold">{currentUser?.role}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Présentation */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md">
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Présentation</h3>
+              <ul className="list-disc ml-6 space-y-2 text-gray-700 dark:text-gray-300">
+                <li className="flex items-center gap-2">
+                  <CalendarDays className="w-5 h-5 text-teal-500" />
+                  Gérer vos disponibilités
+                </li>
+                <li className="flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-pink-500" />
+                  Valider ou refuser les réservations de consultations
+                </li>
+                <li className="flex items-center gap-2">
+                  <Info className="w-5 h-5 text-blue-500" />
+                  Accéder à vos consultations et profils patients
+                </li>
+              </ul>
+              <p className="mt-4 text-gray-700 dark:text-gray-300">
+                Utilisez le menu pour naviguer entre les sections.
+              </p>
+            </div>
+          </div>
+        );
       case 'disponibilites':
-        // Passer proId si besoin (à adapter selon composant Disponibilites)
         return <Disponibilite proId={currentUser?.id} />;
       case 'reservations':
         return <Reservations proId={currentUser?.id} />;
@@ -133,7 +183,13 @@ const TableauProfessionnel = () => {
 
           {/* Nav items */}
           <div className="flex-grow mt-1 space-y-1 px-2">
-          
+            <NavItem
+              icon={<Info size={20} />}
+              label="Informations"
+              active={activeTab === 'informations'}
+              onClick={() => setActiveTab('informations')}
+              reduced={sidebarReduced}
+            />
             <NavItem
               icon={<CalendarDays size={20} />}
               label="Disponibilités"

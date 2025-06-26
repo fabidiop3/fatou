@@ -1,3 +1,4 @@
+import axios from 'axios';
 import api from './api'; 
 
 // Disponibilités
@@ -23,9 +24,10 @@ export const supprimerDisponibilite = async (id) => {
 
 // Consultations (pour le professionnel)
 export const getConsultations = async () => {
-  const response = await api.get('/professionnel/consultations'); 
+  const response = await axios.get('/api/professionnels/mes-reservations');
   return response.data;
 };
+
 
 export const modifierConsultation = async (id, consultationData) => {
   const response = await api.put(`/professionnel/consultations/${id}`, consultationData);

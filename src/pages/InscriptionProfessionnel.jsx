@@ -129,7 +129,7 @@ const InscriptionProfessionnel = () => {
       });
 
       setSuccess('Inscription réussie ! Vous allez être redirigé...');
-      setTimeout(() => navigate('/connexion'), 2000);
+      setTimeout(() => navigate('/'), 2000);
     } catch (err) {
       console.error('Erreur d\'inscription:', err.response?.data || err.message);
       const backendErrors = err.response?.data?.errors;
